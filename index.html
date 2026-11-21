@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>داشبورد | LearnPath AI</title>
+    <link rel="icon" href="data:,">
+
+    <!-- تم ذخیره‌شده را پیش از نمایش صفحه اعمال می‌کند تا چشمک نزند -->
+    <script>
+        try {
+            document.documentElement.dataset.theme = localStorage.getItem("lp-theme") || "dark";
+        } catch (e) {}
+    </script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lalezar&family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="assets/css/app.css">
+</head>
+<body data-page="dashboard">
+
+    <main id="page" data-title="داشبورد" data-sub="نمای کلی مسیر یادگیری شما">
+
+        <section class="hero" id="hero">
+            <svg class="hero-trail" viewBox="0 0 800 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+                <path d="M-20 240 C 140 120, 260 300, 400 190 S 640 60, 830 150" fill="none" stroke="#fff" stroke-width="3" stroke-dasharray="2 12" stroke-linecap="round"/>
+                <circle cx="197" cy="211" r="9" fill="#12c4a5"/>
+                <circle cx="400" cy="190" r="9" fill="#ffb224"/>
+                <circle cx="596" cy="95" r="9" fill="#2fa1ff"/>
+            </svg>
+
+            <div class="hero-text">
+                <p class="hero-greeting">سلام، <span id="heroName">دوست من</span> 👋</p>
+                <h2 id="heroPath">در حال بارگذاری...</h2>
+                <p class="hero-next" id="heroNext"></p>
+
+                <div class="hero-actions">
+                    <a id="heroLink" class="btn btn-light" href="paths.html">ادامه مسیر</a>
+                    <a class="btn btn-glass" href="goals.html#new">
+                        <span data-icon="plus"></span> هدف جدید
+                    </a>
+                </div>
+            </div>
+
+            <div class="hero-ring" role="img" aria-label="میانگین پیشرفت">
+                <svg viewBox="0 0 120 120">
+                    <circle class="ring-track" cx="60" cy="60" r="54"/>
+                    <circle class="ring-fill" id="ringFill" cx="60" cy="60" r="54"/>
+                </svg>
+                <div class="ring-center">
+                    <strong id="ringValue">۰٪</strong>
+                    <span>میانگین پیشرفت</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="tiles" aria-label="آمار یادگیری">
+            <article class="tile" data-accent="coral">
+                <span class="tile-icon" data-icon="target"></span>
+                <div><strong id="goalsCount">۰</strong><small>هدف یادگیری</small></div>
+            </article>
+            <article class="tile" data-accent="mint">
+                <span class="tile-icon" data-icon="route"></span>
+                <div><strong id="pathsCount">۰</strong><small>مسیر ساخته‌شده</small></div>
+            </article>
+            <article class="tile" data-accent="sky">
+                <span class="tile-icon" data-icon="quiz"></span>
+                <div><strong id="quizAvg">—</strong><small>میانگین نمره آزمون‌ها</small></div>
+            </article>
+            <article class="tile" data-accent="amber">
+                <span class="tile-icon" data-icon="trophy"></span>
+                <div><strong id="completedCount">۰</strong><small>هدف تکمیل‌شده</small></div>
+            </article>
+        </section>
+
+        <section class="two-col">
+            <article class="panel">
+                <div class="panel-head">
+                    <h3>اهداف اخیر</h3>
+                    <a class="text-link" href="goals.html">همه اهداف <span data-icon="arrow"></span></a>
+                </div>
+                <div id="goalsList" class="goals-list" data-limit="3">
+                    <p class="loading">در حال بارگذاری اهداف...</p>
+                </div>
+            </article>
+
+            <article class="panel">
+                <div class="panel-head">
+                    <h3>فعالیت‌های اخیر</h3>
+                    <a class="text-link" href="activity.html">همه فعالیت‌ها <span data-icon="arrow"></span></a>
+                </div>
+                <div id="activityList" class="activity-list" data-limit="5">
+                    <p class="loading">در حال بارگذاری فعالیت‌ها...</p>
+                </div>
+            </article>
+        </section>
+    </main>
+
+    <script type="module" src="assets/js/dashboard.js"></script>
+</body>
+</html>

@@ -1,0 +1,289 @@
+{
+  "name": "LearnPath AI - Weekly Quiz Generator",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "learnpath-quiz",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "e93ef7e6-10a7-4fe1-807e-6422c6a58c78",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        200
+      ],
+      "webhookId": "e3cafa60-d0f7-4d48-b866-be467a470e0a"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body || {};\nlet data = body;\nif (typeof body.payload === 'string') {\n  try { data = JSON.parse(body.payload); } catch (e) { data = {}; }\n}\nconst q = data.quiz || {};\nconst list = (v, max, len) => (Array.isArray(v) ? v : []).slice(0, max).map(x => String(x).slice(0, len));\nreturn [{ json: {\n  access_token: String(data.access_token || ''),\n  quiz: {\n    path_title: String(q.path_title || '').slice(0, 150),\n    week_title: String(q.week_title || '').slice(0, 150),\n    level: String(q.level || 'beginner'),\n    topics: list(q.topics, 12, 200),\n    objectives: list(q.objectives, 8, 200),\n    num_questions: Math.min(Math.max(Number(q.num_questions) || 5, 3), 10)\n  }\n} }];"
+      },
+      "id": "5a3eeb46-d05c-4330-82da-e5f85efb7d6c",
+      "name": "Parse Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://nozdzaauckobpvsbclil.supabase.co/auth/v1/user",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "sb_publishable_gLatbT8z_X_Mk5kSsG6xnw_zk7_7HuQ"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.access_token }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "439ab084-2834-45f4-a4a0-21557fbf2a7f",
+      "name": "Verify Supabase User",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "db48e8e7-09b4-4c46-9fe1-980d9e3d6233",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "5a5f66ff-fea8-4f27-9e45-b195806bb885",
+      "name": "Is User Valid",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        660,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=اطلاعات آزمون:\n- مسیر یادگیری: {{ $('Parse Input').item.json.quiz.path_title }}\n- هفته: {{ $('Parse Input').item.json.quiz.week_title }}\n- سطح کاربر: {{ $('Parse Input').item.json.quiz.level }}\n- اهداف هفته: {{ $('Parse Input').item.json.quiz.objectives.join('، ') || 'ندارد' }}\n- موضوعات این هفته: {{ $('Parse Input').item.json.quiz.topics.join('، ') }}\n- تعداد سؤال: {{ $('Parse Input').item.json.quiz.num_questions }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "تو طراح آزمون آموزشی هستی. بر اساس موضوعات یک هفته از مسیر یادگیری، یک آزمون چهارگزینه‌ای بساز.\nقوانین:\n- دقیقاً به تعداد خواسته‌شده سؤال بساز.\n- سؤال‌ها فقط از موضوعات همان هفته باشند و با سطح کاربر متناسب (مبتدی: مفهومی و ساده؛ متوسط: کاربردی؛ پیشرفته: تحلیلی).\n- هر سؤال دقیقاً ۴ گزینه دارد و فقط یکی درست است. گزینه‌های غلط باید قابل‌قبول باشند ولی بدون ابهام غلط. از «همه موارد» یا «هیچ‌کدام» استفاده نکن.\n- correct_index شماره گزینه درست است (عدد 0 تا 3، شمارش از صفر).\n- برای هر سؤال یک توضیح کوتاه (یک یا دو جمله) درباره پاسخ درست بنویس.\n- همه متن‌ها به فارسی روان باشند (اصطلاحات فنی و کد می‌توانند انگلیسی بمانند).\n- فقط خروجی ساختاریافته خواسته‌شده را برگردان."
+        }
+      },
+      "id": "0f7bc65b-09ef-4445-9bfb-b0997988e37d",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        900,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-3.8-flash",
+        "options": {}
+      },
+      "id": "574a92ad-1767-4ded-89ba-18a0769d4df7",
+      "name": "Google Gemini Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        860,
+        340
+      ]
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"questions\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"question\": {\n            \"type\": \"string\"\n          },\n          \"options\": {\n            \"type\": \"array\",\n            \"items\": {\n              \"type\": \"string\"\n            }\n          },\n          \"correct_index\": {\n            \"type\": \"integer\"\n          },\n          \"explanation\": {\n            \"type\": \"string\"\n          }\n        },\n        \"required\": [\n          \"question\",\n          \"options\",\n          \"correct_index\",\n          \"explanation\"\n        ]\n      }\n    }\n  },\n  \"required\": [\n    \"questions\"\n  ]\n}"
+      },
+      "id": "aabef8de-088f-4c28-bad8-c8c3b74c4103",
+      "name": "Structured Output Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        1060,
+        340
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json.output) }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "2b6109e3-ffbf-4c45-a35f-9bbcccefd930",
+      "name": "Respond with Quiz",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1260,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ error: 'unauthorized' }) }}",
+        "options": {
+          "responseCode": 401,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "7ffb3029-74df-4fb8-bf47-8ec96ce37813",
+      "name": "Respond Unauthorized",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        900,
+        320
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Parse Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Input": {
+      "main": [
+        [
+          {
+            "node": "Verify Supabase User",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Supabase User": {
+      "main": [
+        [
+          {
+            "node": "Is User Valid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is User Valid": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Unauthorized",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Respond with Quiz",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false
+}

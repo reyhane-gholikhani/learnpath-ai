@@ -1,0 +1,289 @@
+{
+  "name": "LearnPath AI - Plan Revision",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "learnpath-revise",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "656ca496-81aa-4f36-b8af-a33cd048d19e",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        200
+      ],
+      "webhookId": "f9d64e38-9f81-4081-93f1-dc0ab7b60d7c"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body || {};\nlet data = body;\nif (typeof body.payload === 'string') {\n  try { data = JSON.parse(body.payload); } catch (e) { data = {}; }\n}\nconst r = data.revise || {};\nconst str = (v, n) => String(v || '').slice(0, n);\nconst list = (v, max, len) => (Array.isArray(v) ? v : []).slice(0, max).map(x => str(x, len));\nconst done = (Array.isArray(r.completed_weeks) ? r.completed_weeks : []).slice(0, 12).map(w => ({\n  week: Number(w.week) || 0,\n  title: str(w.title, 150),\n  progress_percent: Number(w.progress_percent) || 0,\n  quiz_score: (w.quiz_score === null || w.quiz_score === undefined) ? null : Number(w.quiz_score),\n  unfinished_topics: list(w.unfinished_topics, 8, 200)\n}));\nconst rest = (Array.isArray(r.remaining_weeks) ? r.remaining_weeks : []).slice(0, 12).map(w => ({\n  week: Number(w.week) || 0,\n  title: str(w.title, 150),\n  objectives: list(w.objectives, 5, 200),\n  topics: list(w.topics, 8, 200),\n  practice: str(w.practice, 300),\n  resources: list(w.resources, 4, 200)\n}));\nreturn [{ json: {\n  access_token: String(data.access_token || ''),\n  revise: {\n    path_title: str(r.path_title, 150),\n    level: str(r.level || 'beginner', 30),\n    weekly_hours: Number(r.weekly_hours) || 5,\n    target_date: r.target_date || null,\n    completed_weeks: done,\n    remaining_weeks: rest\n  }\n} }];"
+      },
+      "id": "f310615c-7901-4142-ad24-b10fb1b8b12b",
+      "name": "Parse Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://nozdzaauckobpvsbclil.supabase.co/auth/v1/user",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "sb_publishable_gLatbT8z_X_Mk5kSsG6xnw_zk7_7HuQ"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.access_token }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "90f6abbc-9e20-4c5f-91ad-7ff27796c53e",
+      "name": "Verify Supabase User",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "802e5aff-9ce4-4cd0-b295-18618795d440",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "cceb662b-9b0c-487d-a90e-9e0b9434c38d",
+      "name": "Is User Valid",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        660,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=اطلاعات مسیر:\n- مسیر یادگیری: {{ $('Parse Input').item.json.revise.path_title }}\n- سطح کاربر: {{ $('Parse Input').item.json.revise.level }}\n- ساعت قابل اختصاص در هفته: {{ $('Parse Input').item.json.revise.weekly_hours }}\n- تاریخ هدف: {{ $('Parse Input').item.json.revise.target_date || 'مشخص نشده' }}\n- تاریخ امروز: {{ $now.toFormat('yyyy-MM-dd') }}\n- هفته‌های شروع‌شده و عملکرد کاربر (JSON): {{ JSON.stringify($('Parse Input').item.json.revise.completed_weeks) }}\n- هفته‌های باقی‌مانده در برنامه فعلی (JSON): {{ JSON.stringify($('Parse Input').item.json.revise.remaining_weeks) }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "تو مربی یادگیری باتجربه‌ای. برنامه باقی‌مانده یک مسیر یادگیری را بر اساس عملکرد واقعی کاربر بازنویسی کن.\nقوانین:\n- فقط هفته‌های باقی‌مانده را بازنویسی کن؛ هفته‌های شروع‌شده را دوباره ننویس.\n- اگر نمره آزمون یک هفته کمتر از 70 است یا موضوع‌های ناتمام دارد، در ابتدای هفته‌های جدید مرور همان موضوع‌ها را بگذار (در هفته اول جدید یا در یک هفته مرور کوتاه).\n- اگر کاربر موارد را کامل کرده و نمره‌ها بالای 85 است، برنامه را فشرده‌تر کن یا مطالب پیشرفته‌تر اضافه کن.\n- حجم کار هر هفته با ساعت هفتگی سازگار باشد. اگر تاریخ هدف مشخص است، تعداد هفته‌های جدید را با آن هماهنگ کن؛ در غیر این صورت نزدیک به تعداد هفته‌های باقی‌مانده فعلی بمان (حداقل 1 و حداکثر 10 هفته).\n- موضوع‌های مهم برنامه فعلی را حذف نکن؛ فقط ترتیب، حجم و مرور را با عملکرد کاربر تنظیم کن.\n- برای هر هفته: عنوان، 2 تا 4 هدف، 3 تا 5 موضوع، یک تمرین عملی و 2 تا 3 منبع پیشنهادی بنویس.\n- در منابع فقط نام کتاب، دوره، مستندات یا یک عبارت جستجو بنویس؛ هرگز لینک یا URL نساز.\n- change_summary: دو تا چهار جمله فارسی که توضیح می‌دهد چه چیزی و چرا تغییر کرد.\n- همه متن‌ها به فارسی روان باشند (اصطلاحات فنی می‌توانند انگلیسی بمانند).\n- فقط خروجی ساختاریافته خواسته‌شده را برگردان."
+        }
+      },
+      "id": "724e114a-69b5-4437-81ba-163f57f7e7f9",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        900,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-3.8-flash",
+        "options": {}
+      },
+      "id": "2bf3ec5f-3c7f-4d43-9719-e83f8e0129ba",
+      "name": "Google Gemini Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        860,
+        340
+      ]
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"change_summary\": {\n      \"type\": \"string\"\n    },\n    \"weeks\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"title\": {\n            \"type\": \"string\"\n          },\n          \"objectives\": {\n            \"type\": \"array\",\n            \"items\": {\n              \"type\": \"string\"\n            }\n          },\n          \"topics\": {\n            \"type\": \"array\",\n            \"items\": {\n              \"type\": \"string\"\n            }\n          },\n          \"practice\": {\n            \"type\": \"string\"\n          },\n          \"resources\": {\n            \"type\": \"array\",\n            \"items\": {\n              \"type\": \"string\"\n            }\n          }\n        },\n        \"required\": [\n          \"title\",\n          \"topics\"\n        ]\n      }\n    }\n  },\n  \"required\": [\n    \"change_summary\",\n    \"weeks\"\n  ]\n}"
+      },
+      "id": "f8959615-1991-4508-b46f-7ee2804484bd",
+      "name": "Structured Output Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        1060,
+        340
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json.output) }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "1a82edfb-463a-4216-8569-a5f83e566701",
+      "name": "Respond with Revision",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1260,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ error: 'unauthorized' }) }}",
+        "options": {
+          "responseCode": 401,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "dc45422f-05d0-4717-9c07-bda7d88b23a6",
+      "name": "Respond Unauthorized",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        900,
+        320
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Parse Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Input": {
+      "main": [
+        [
+          {
+            "node": "Verify Supabase User",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Supabase User": {
+      "main": [
+        [
+          {
+            "node": "Is User Valid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is User Valid": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Unauthorized",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Respond with Revision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false
+}

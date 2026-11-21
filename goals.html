@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>اهداف من | LearnPath AI</title>
+    <link rel="icon" href="data:,">
+
+    <!-- تم ذخیره‌شده را پیش از نمایش صفحه اعمال می‌کند تا چشمک نزند -->
+    <script>
+        try {
+            document.documentElement.dataset.theme = localStorage.getItem("lp-theme") || "dark";
+        } catch (e) {}
+    </script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lalezar&family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="assets/css/app.css">
+</head>
+<body data-page="goals">
+
+    <main id="page" data-title="اهداف من" data-sub="چه چیزی می‌خواهید یاد بگیرید؟">
+
+        <div class="toolbar">
+            <p>برای هر هدف، هوش مصنوعی یک مسیر هفته‌به‌هفته می‌سازد. رنگ هر هدف در مسیر و فعالیت‌هایش هم تکرار می‌شود.</p>
+            <button class="btn btn-primary" id="newGoalBtn" type="button">
+                <span data-icon="plus"></span> ساخت هدف جدید
+            </button>
+        </div>
+
+        <div id="goalsList" class="goals-grid">
+            <p class="loading">در حال بارگذاری اهداف...</p>
+        </div>
+
+        <div class="modal-overlay" id="goalModal" hidden>
+            <div class="modal">
+                <div class="modal-heading">
+                    <h2>هدف یادگیری تازه</h2>
+                    <button id="closeModalBtn" class="close-btn" type="button" aria-label="بستن">×</button>
+                </div>
+
+                <form id="goalForm">
+                    <label for="goalTitle">چه چیزی می‌خواهید یاد بگیرید؟</label>
+                    <input id="goalTitle" type="text" placeholder="مثلاً: یادگیری برنامه‌نویسی پایتون" maxlength="150" required>
+
+                    <label for="goalDescription">توضیحات</label>
+                    <textarea id="goalDescription" placeholder="هدف یادگیری خود را توضیح دهید..." rows="3"></textarea>
+
+                    <label for="currentLevel">سطح فعلی مهارت</label>
+                    <select id="currentLevel" required>
+                        <option value="beginner">مبتدی</option>
+                        <option value="intermediate">متوسط</option>
+                        <option value="advanced">پیشرفته</option>
+                    </select>
+
+                    <label for="weeklyHours">ساعت قابل اختصاص در هفته</label>
+                    <input id="weeklyHours" type="number" min="1" max="168" value="5" required>
+
+                    <label for="targetDate">تاریخ هدف (اختیاری)</label>
+                    <input id="targetDate" type="date">
+
+                    <p id="goalMessage" class="form-message" role="status"></p>
+
+                    <button type="submit" class="primary-btn full-btn" id="saveGoalBtn">
+                        ذخیره هدف و ساخت مسیر
+                    </button>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <script type="module" src="assets/js/dashboard.js"></script>
+</body>
+</html>

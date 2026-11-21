@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مسیرهای یادگیری | LearnPath AI</title>
+    <link rel="icon" href="data:,">
+
+    <!-- تم ذخیره‌شده را پیش از نمایش صفحه اعمال می‌کند تا چشمک نزند -->
+    <script>
+        try {
+            document.documentElement.dataset.theme = localStorage.getItem("lp-theme") || "dark";
+        } catch (e) {}
+    </script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lalezar&family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="assets/css/app.css">
+</head>
+<body data-page="paths">
+
+    <main id="page" data-title="مسیرهای یادگیری" data-sub="ایستگاه‌های هر مسیر؛ موضوع‌ها را تیک بزنید و آزمون بدهید">
+
+        <div id="pathsList" class="paths-list">
+            <p class="loading">در حال بارگذاری مسیرها...</p>
+        </div>
+
+        <div class="modal-overlay" id="quizModal" hidden>
+            <div class="modal quiz-modal">
+                <div class="modal-heading">
+                    <h2 id="quizTitle">آزمون هفتگی</h2>
+                    <button id="closeQuizBtn" class="close-btn" type="button" aria-label="بستن">×</button>
+                </div>
+                <div id="quizBody"></div>
+            </div>
+        </div>
+
+        <div class="modal-overlay" id="reviseModal" hidden>
+            <div class="modal quiz-modal">
+                <div class="modal-heading">
+                    <h2>اصلاح برنامه بر اساس پیشرفت</h2>
+                    <button id="closeReviseBtn" class="close-btn" type="button" aria-label="بستن">×</button>
+                </div>
+                <div id="reviseBody"></div>
+            </div>
+        </div>
+    </main>
+
+    <script type="module" src="assets/js/dashboard.js"></script>
+</body>
+</html>

@@ -1,0 +1,304 @@
+{
+  "name": "LearnPath AI - Learning Path Generator",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## LearnPath AI\nاین workflow یک هدف یادگیری را از وب‌سایت می‌گیرد، هویت کاربر را با Supabase بررسی می‌کند، با AI Agent مسیر یادگیری می‌سازد و به سایت برمی‌گرداند.\n\n**قبل از فعال‌کردن:** روی نود «Google Gemini Chat Model» بروید و Credential بسازید (کلید API از aistudio.google.com/apikey).",
+        "height": 220,
+        "width": 420
+      },
+      "id": "746a8c8d-9a09-4e98-b604-877d4d3f57e8",
+      "name": "راهنما",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -200,
+        -120
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "learnpath-generate",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "52d1aaf6-2d1f-4ff2-971d-1a83103d6f5e",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        200
+      ],
+      "webhookId": "b7d09814-cfad-4e90-af76-a62d3b1bf13d"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body || {};\nlet data = body;\nif (typeof body.payload === 'string') {\n  try { data = JSON.parse(body.payload); } catch (e) { data = {}; }\n}\nconst g = data.goal || {};\nreturn [{ json: {\n  access_token: String(data.access_token || ''),\n  goal: {\n    title: String(g.title || '').slice(0, 150),\n    description: String(g.description || '').slice(0, 1000),\n    current_level: String(g.current_level || 'beginner'),\n    weekly_hours: Number(g.weekly_hours) || 5,\n    target_date: g.target_date || null\n  }\n} }];"
+      },
+      "id": "28c2221b-570b-46a5-8a8a-54b5c46f43e2",
+      "name": "Parse Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://nozdzaauckobpvsbclil.supabase.co/auth/v1/user",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "sb_publishable_gLatbT8z_X_Mk5kSsG6xnw_zk7_7HuQ"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.access_token }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "e74e0f3e-ba87-4253-a4ee-a18afd985c05",
+      "name": "Verify Supabase User",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "eadadeca-7ff4-4af2-b0f0-fce1136e410c",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "9c123877-84ed-4e96-bf04-2212ee8df2e1",
+      "name": "Is User Valid",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        660,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=اطلاعات کاربر:\n- هدف یادگیری: {{ $('Parse Input').item.json.goal.title }}\n- توضیحات: {{ $('Parse Input').item.json.goal.description || 'ندارد' }}\n- سطح فعلی: {{ $('Parse Input').item.json.goal.current_level }}\n- ساعت قابل اختصاص در هفته: {{ $('Parse Input').item.json.goal.weekly_hours }}\n- تاریخ هدف: {{ $('Parse Input').item.json.goal.target_date || 'مشخص نشده' }}\n- تاریخ امروز: {{ $now.toFormat('yyyy-MM-dd') }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "تو یک مربی و طراح برنامه آموزشی باتجربه هستی. بر اساس اطلاعات کاربر، یک مسیر یادگیری هفته‌به‌هفته، واقع‌بینانه و قابل اجرا بساز.\nقوانین:\n- همه متن‌ها را به فارسی روان بنویس (اصطلاحات فنی می‌توانند انگلیسی بمانند).\n- تعداد هفته‌ها را از روی تاریخ هدف و تاریخ امروز تعیین کن؛ اگر تاریخ هدف مشخص نبود ۸ هفته؛ حداقل ۲ و حداکثر ۱۲ هفته.\n- حجم کار هر هفته باید با ساعت‌های هفتگی کاربر سازگار باشد.\n- سطح فعلی کاربر را در نظر بگیر؛ اگر مبتدی است از مبانی شروع کن.\n- برای هر هفته: عنوان، ۲ تا ۴ هدف، ۳ تا ۵ موضوع، یک تمرین عملی و ۲ تا ۳ منبع پیشنهادی بنویس.\n- در منابع فقط نام کتاب، دوره، مستندات یا یک عبارت جستجو بنویس؛ هرگز لینک یا URL نساز.\n- در پایان یک پروژه نهایی و چند نکته کوتاه پیشنهاد بده.\n- فقط خروجی ساختاریافته خواسته‌شده را برگردان."
+        }
+      },
+      "id": "93676edf-f201-4743-8246-6e6090d96776",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        900,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash",
+        "options": {}
+      },
+      "id": "d3376483-785e-4140-807e-f78c679f9665",
+      "name": "Google Gemini Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        860,
+        340
+      ]
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"title\": {\n      \"type\": \"string\"\n    },\n    \"summary\": {\n      \"type\": \"string\"\n    },\n    \"total_weeks\": {\n      \"type\": \"integer\"\n    },\n    \"weeks\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"week\": {\n            \"type\": \"integer\"\n          },\n          \"title\": {\n            \"type\": \"string\"\n          },\n          \"objectives\": {\n            \"type\": \"array\",\n            \"items\": {\n              \"type\": \"string\"\n            }\n          },\n          \"topics\": {\n            \"type\": \"array\",\n            \"items\": {\n              \"type\": \"string\"\n            }\n          },\n          \"practice\": {\n            \"type\": \"string\"\n          },\n          \"resources\": {\n            \"type\": \"array\",\n            \"items\": {\n              \"type\": \"string\"\n            }\n          }\n        },\n        \"required\": [\n          \"week\",\n          \"title\",\n          \"topics\"\n        ]\n      }\n    },\n    \"final_project\": {\n      \"type\": \"string\"\n    },\n    \"tips\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\"\n      }\n    }\n  },\n  \"required\": [\n    \"title\",\n    \"summary\",\n    \"weeks\"\n  ]\n}"
+      },
+      "id": "79edca8e-8955-44d2-a174-41d961d41aba",
+      "name": "Structured Output Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        1060,
+        340
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json.output) }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "d4a26079-0b5c-40f6-973e-34089c732879",
+      "name": "Respond with Plan",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1260,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ error: 'unauthorized' }) }}",
+        "options": {
+          "responseCode": 401,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "85aacdb8-0375-491f-a295-661901f7ec23",
+      "name": "Respond Unauthorized",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        900,
+        320
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Parse Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Input": {
+      "main": [
+        [
+          {
+            "node": "Verify Supabase User",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Supabase User": {
+      "main": [
+        [
+          {
+            "node": "Is User Valid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is User Valid": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Unauthorized",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Respond with Plan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false
+}
